@@ -3,22 +3,20 @@ import os
 import gradio as gr
 from research_manager import ResearchManager
 
-# Optional banner if the OpenAI key isn't configured in the Space (Settings → Secrets)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BANNER = None if OPENAI_API_KEY else (
     "⚠️ <b>OPENAI_API_KEY</b> is not set. "
     "Add it in <i>Settings → Secrets</i> and restart the Space."
 )
 
-def stream(query: str):
-    """Wrap the ResearchManager async generator for Gradio streaming."""
-    async def agen():
-        try:
-            async for chunk in ResearchManager().run(query):
-                yield chunk
-        except Exception as e:
-            yield f"**Error:** {e}"
-    return agen()
+# async generator that yields incremental text
+async def stream(query: str):
+    try:
+        rm = ResearchManager()
+        async for chunk in rm.run(query):
+            yield chunk
+    except Exception as e:
+        yield f"**Error:** {e}"
 
 def build_ui():
     with gr.Blocks(title="Agentic Research") as demo:
@@ -37,8 +35,9 @@ def build_ui():
 
         out = gr.Markdown(label="Research stream")
 
-        run.click(stream, inputs=q, outputs=out, queue=True, show_progress=True)
-        q.submit(stream, inputs=q, outputs=out, queue=True, show_progress=True)
+        # IMPORTANT in Gradio 5: pass stream=True so the async generator is consumed as a stream
+        run.click(stream, inputs=q, outputs=out, stream=True)
+        q.submit(stream, inputs=q, outputs=out, stream=True)
 
         gr.Examples(
             examples=[
@@ -53,8 +52,7 @@ def build_ui():
     return demo
 
 demo = build_ui()
-demo.queue()   # no args needed for Gradio 4+
-
+demo.queue()  # defaults are fine for Gradio 5
 
 if __name__ == "__main__":
     demo.launch()
