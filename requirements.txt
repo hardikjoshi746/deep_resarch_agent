@@ -193,7 +193,7 @@ ifaddr==0.2.0
     # via aioice
 importlib-metadata==8.7.0
     # via opentelemetry-api
-ipython==9.3.0
+ipython==8.26.0
     # via ipywidgets
 ipython-pygments-lexers==1.1.1
     # via ipython
