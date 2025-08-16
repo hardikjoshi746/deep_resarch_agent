@@ -11,6 +11,8 @@ import math
 import re
 from collections import Counter
 from datetime import datetime, timezone
+from contextlib import nullcontext
+import os
 
 
 class ResearchManager:
@@ -18,9 +20,19 @@ class ResearchManager:
     async def run(self, query: str):
         """Run the deep research process, yielding status updates and the final report"""
         trace_id = gen_trace_id()
-        with trace("Research trace", trace_id=trace_id):
-            print(f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}")
-            yield f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
+        # Disable trace by default on Spaces to avoid ContextVar loop issues
+        use_trace = os.getenv("DISABLE_TRACE", "1") != "1"
+        ctx = trace("Research trace", trace_id=trace_id) if use_trace else nullcontext()
+
+        with ctx:
+            if use_trace:
+                msg = f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
+                print(msg)
+                yield msg
+            else:
+                print("Tracing disabled for this run (set DISABLE_TRACE=0 to enable).")
+                yield "Tracing disabled for this run."
+
             print("Starting research...")
 
             search_plan = await self.plan_searches(query)
@@ -29,7 +41,7 @@ class ResearchManager:
             search_results = await self.perform_searches(search_plan)
             yield "Searches complete, writing report..."
 
-            # Build minimal 'sources' from search results (improve once your search tool exposes real URLs/metadata)
+            # Build minimal 'sources' from search results (upgrade when your search tool returns real URLs/meta)
             sources = self._build_sources_from_results(search_plan, search_results)
 
             report = await self.write_report(query, search_results, sources)
@@ -45,10 +57,7 @@ class ResearchManager:
     async def plan_searches(self, query: str) -> WebSearchPlan:
         """Plan the searches to perform for the query"""
         print("Planning searches...")
-        result = await Runner.run(
-            planner_agent,
-            f"Query: {query}",
-        )
+        result = await Runner.run(planner_agent, f"Query: {query}")
         plan = result.final_output_as(WebSearchPlan)
         print(f"Will perform {len(plan.searches)} searches")
         return plan
@@ -111,17 +120,16 @@ class ResearchManager:
 
         # 2) Cheap deterministic checks
         cov = self._citation_coverage(report.markdown_report)
-        div = self._source_diversity([s.get("url","") for s in sources])
+        div = self._source_diversity([s.get("url", "") for s in sources])
         age = self._median_source_age_days([s.get("published_at") for s in sources])
 
-        # Aggregate a short metrics footer into the report summary (if your ReportData has a short_summary field)
+        # Attach brief metrics to a short summary if available
         try:
             report.short_summary += (
                 f"\n\n_Eval:_ overall {eval_report.overall:.1f}/5 • "
                 f"cov {cov:.2f} • div {div:.2f} • age_med {('∞' if age == math.inf else int(age))}d"
             )
         except Exception:
-            # ignore if your ReportData has no short_summary
             pass
 
         # 3) Decide if a revision is needed
@@ -141,9 +149,9 @@ class ResearchManager:
             return report, eval_report
 
         # Build concise feedback from evaluator recommendations
-        feedback_lines = "\n".join(f"- {r}" for r in (getattr(eval_report, "recommendations", None) or []))
-        if not feedback_lines:
-            feedback_lines = "- Tighten unsupported claims and add/repair [n] citations for non-obvious facts."
+        feedback_lines = "\n".join(
+            f"- {r}" for r in (getattr(eval_report, "recommendations", None) or [])
+        ) or "- Tighten unsupported claims and add/repair [n] citations for non-obvious facts."
 
         revise_prompt = (
             "Revise the draft to address these issues. Keep markdown. "
@@ -166,7 +174,7 @@ class ResearchManager:
         writer_res2 = await Runner.run(writer_agent, writer_input)
         revised = writer_res2.final_output_as(ReportData)
 
-        # (Optional) one more evaluation pass (cheap)
+        # (Optional) quick second evaluation
         eval_input2 = build_eval_prompt(query, revised.markdown_report, sources)
         eval_res2 = await Runner.run(evaluator_agent, eval_input2)
         eval_report2: EvaluationReport = eval_res2.final_output_as(EvaluationReport)
@@ -182,7 +190,7 @@ class ResearchManager:
         """
         sources: list[dict] = []
         for i, summary in enumerate(search_results, start=1):
-            q = search_plan.searches[i-1].query if i-1 < len(search_plan.searches) else f"Search {i}"
+            q = search_plan.searches[i - 1].query if i - 1 < len(search_plan.searches) else f"Search {i}"
             sources.append({
                 "url": f"https://example.com/search/{i}",  # TODO: real URL from search results
                 "title": f"Notes for: {q}",

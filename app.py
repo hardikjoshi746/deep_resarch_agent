@@ -1,4 +1,3 @@
-# app.py
 import os
 import asyncio
 import gradio as gr
@@ -14,15 +13,13 @@ BANNER = None if OPENAI_API_KEY else (
 def stream(query: str):
     """
     Synchronous generator wrapper around the async ResearchManager.
-    Gradio treats this as a streaming function and updates the Markdown output
-    as each chunk is yielded.
+    Gradio streams each yielded chunk to the Markdown output.
     """
     async def agen():
         rm = ResearchManager()
         async for chunk in rm.run(query):
             yield chunk
 
-    # Create a fresh event loop to drive the async generator
     loop = asyncio.new_event_loop()
     try:
         asyncio.set_event_loop(loop)
@@ -61,7 +58,6 @@ def build_ui():
 
         out = gr.Markdown(label="Research stream")
 
-        # No stream kwarg here; streaming is achieved by yielding from the sync generator above
         run.click(stream, inputs=q, outputs=out)
         q.submit(stream, inputs=q, outputs=out)
 
@@ -78,7 +74,7 @@ def build_ui():
     return demo
 
 demo = build_ui()
-demo.queue()  # enable queuing with defaults
+demo.queue()
 
 if __name__ == "__main__":
     demo.launch()
