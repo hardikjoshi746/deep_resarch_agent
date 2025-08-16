@@ -14,16 +14,10 @@ deep_resarch_agent/
 ├── research_manager.py # Oversees workflows and agent interactions
 ├── search_agent.py # Retrieves data from the web or custom sources
 ├── writer_agent.py # Drafts content or research summaries
-├── main.py # Combined multimodal orchestration (if applicable)
 ├── pyproject.toml # Project configuration & dependencies (managed by uv)
 ├── requirements.txt # Dependencies list (pre-uv migration)
 ├── uv.lock # Lockfile created by uv
 └── .python-version # Python version specification
-
-yaml
-Copy
-Edit
-
 ---
 
 ## 🚀 Quick Start
@@ -35,21 +29,29 @@ Edit
 
 ### Setup
 
-```bash
+
 # If starting fresh (no pyproject.toml)
+```bash
 uv init
+```
 
 # Install dependencies from requirements.txt
+```bash
 uv add --requirements requirements.txt
+```
 
 # Or sync using existing pyproject.toml
+```bash
 uv sync
-Run the Agent
-bash
-Copy
-Edit
+```
+
+# Run the Agent
+```bash
 uv run deep_research.py
+```
+
 🧩 Modules Overview
+
 deep_research.py – Main orchestrator script
 
 email_agent.py – Sends research summaries or notifications via email
@@ -61,31 +63,3 @@ research_manager.py – Coordinates agent collaboration
 search_agent.py – Handles information retrieval
 
 writer_agent.py – Creates written summaries and reports
-
-main.py – (Optional) Entry point for combined agents or UI launch
-
-⚙️ Configuration & Customization
-Update dependencies in pyproject.toml
-
-Modify agent scripts to integrate with your preferred APIs or data sources
-
-To run without affecting your environment:
-
-bash
-Copy
-Edit
-uv run <script>.py
-🤝 Contributing
-Fork the repo & clone it locally
-
-Install dependencies:
-
-bash
-Copy
-Edit
-uv sync
-Add features, improve existing agents, write tests, and update docs
-
-Submit a pull request
-
-```
