@@ -6,7 +6,7 @@ The system employs multiple agents — search, planner, writer, and email commun
 ---
 
 ## 📂 Repository Structure
-
+```bash
 deep_resarch_agent/
 ├── deep_research.py # Main entry point for the deep research agent
 ├── email_agent.py # Sends email summaries or alerts
@@ -18,6 +18,7 @@ deep_resarch_agent/
 ├── requirements.txt # Dependencies list (pre-uv migration)
 ├── uv.lock # Lockfile created by uv
 └── .python-version # Python version specification
+```
 ---
 
 ## 🚀 Quick Start
