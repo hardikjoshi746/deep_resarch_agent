@@ -1,23 +1,23 @@
 import gradio as gr
-from dotenv import load_dotenv
+import asyncio
 from research_manager import ResearchManager
 
-load_dotenv(override=True)
+def _stream(query: str):
+    async def agen():
+        async for chunk in ResearchManager().run(query):
+            yield chunk
+    return agen()
 
+def build_ui():
+    with gr.Blocks() as demo:
+        gr.Markdown("## Agentic Research (OpenAI-powered)")
+        inp = gr.Textbox(label="Question", lines=3, placeholder="Ask about a topic…")
+        out = gr.Markdown(label="Research stream")
+        btn = gr.Button("Run")
+        btn.click(_stream, inputs=inp, outputs=out, queue=True, show_progress=True)
+    return demo
 
-async def run(query: str):
-    async for chunk in ResearchManager().run(query):
-        yield chunk
-
-
-with gr.Blocks(theme=gr.themes.Default(primary_hue="sky")) as ui:
-    gr.Markdown("# Deep Research")
-    query_textbox = gr.Textbox(label="What topic would you like to research?")
-    run_button = gr.Button("Run", variant="primary")
-    report = gr.Markdown(label="Report")
-    
-    run_button.click(fn=run, inputs=query_textbox, outputs=report)
-    query_textbox.submit(fn=run, inputs=query_textbox, outputs=report)
-
-ui.launch(inbrowser=True)
-
+if __name__ == "__main__":
+    ui = build_ui()
+    ui.queue(concurrency_count=2, max_size=16)
+    ui.launch()
