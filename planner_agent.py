@@ -3,8 +3,12 @@ from agents import Agent
 
 HOW_MANY_SEARCHES = 5
 
-INSTRUCTIONS = f"You are a helpful research assistant. Given a query, come up with a set of web searches \
-to perform to best answer the query. Output {HOW_MANY_SEARCHES} terms to query for."
+INSTRUCTIONS = (
+    "You are a helpful research assistant. Given a query, propose specific web searches "
+    f"to perform to best answer the query. Output exactly {HOW_MANY_SEARCHES} focused queries. "
+    "Avoid general terms; include likely authoritative sources or entities in the query."
+)
+
 
 
 class WebSearchItem(BaseModel):

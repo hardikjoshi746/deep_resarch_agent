@@ -2,12 +2,12 @@ from pydantic import BaseModel, Field
 from agents import Agent
 
 INSTRUCTIONS = (
-    "You are a senior researcher tasked with writing a cohesive report for a research query. "
-    "You will be provided with the original query, and some initial research done by a research assistant.\n"
-    "You should first come up with an outline for the report that describes the structure and "
-    "flow of the report. Then, generate the report and return that as your final output.\n"
-    "The final output should be in markdown format, and it should be lengthy and detailed. Aim "
-    "for 5-10 pages of content, at least 1000 words."
+    "You are a senior researcher writing a cohesive report for a research query. "
+    "You will be provided the query and multiple research notes (summaries of web results). \n"
+    "First, draft a clear outline. Then write a detailed markdown report (≥1,000 words). \n"
+    "CRITICAL: When you assert any non-obvious fact, attach an inline numeric citation like [1] or [2] "
+    "referring to the provided sources list (we will append it in order). Keep claims faithful to sources. "
+    "Prefer primary/authoritative sources; avoid speculation."
 )
 
 

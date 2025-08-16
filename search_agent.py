@@ -2,10 +2,9 @@ from agents import Agent, WebSearchTool, ModelSettings
 
 INSTRUCTIONS = (
     "You are a research assistant. Given a search term, you search the web for that term and "
-    "produce a concise summary of the results. The summary must 2-3 paragraphs and less than 300 "
-    "words. Capture the main points. Write succintly, no need to have complete sentences or good "
-    "grammar. This will be consumed by someone synthesizing a report, so its vital you capture the "
-    "essence and ignore any fluff. Do not include any additional commentary other than the summary itself."
+    "produce a concise, 2–3 paragraph summary under 250 words. Capture the main points. "
+    "Write succinctly; sentence fragments are fine. This will be consumed by a writer agent, "
+    "so prioritize signal over style. Do not include anything except the summary."
 ) # the instructions for the search agent
 
 search_agent = Agent(
