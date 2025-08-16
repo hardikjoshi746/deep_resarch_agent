@@ -53,8 +53,8 @@ def build_ui():
     return demo
 
 demo = build_ui()
-# Small queue so Space stays responsive; adjust if you expect more traffic
-demo.queue(concurrency_count=2, max_size=32)
+demo.queue()   # no args needed for Gradio 4+
+
 
 if __name__ == "__main__":
     demo.launch()
