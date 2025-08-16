@@ -1,3 +1,15 @@
+---
+title: Agentic Research
+emoji: 🚀
+colorFrom: indigo
+colorTo: purple
+sdk: gradio
+sdk_version: "4.36.0"
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # Deep Research Agent
 
 **A modular, AI-powered research assistant framework** built with Python and powered by [Gradio](https://www.gradio.app/) for the UI.  
@@ -6,6 +18,7 @@ The system employs multiple agents — search, planner, writer, and email commun
 ---
 
 ## 📂 Repository Structure
+
 ```bash
 deep_resarch_agent/
 ├── deep_research.py # Main entry point for the deep research agent
@@ -19,6 +32,7 @@ deep_resarch_agent/
 ├── uv.lock # Lockfile created by uv
 └── .python-version # Python version specification
 ```
+
 ---
 
 ## 🚀 Quick Start
@@ -30,23 +44,26 @@ deep_resarch_agent/
 
 ### Setup
 
-
 # If starting fresh (no pyproject.toml)
+
 ```bash
 uv init
 ```
 
 # Install dependencies from requirements.txt
+
 ```bash
 uv add --requirements requirements.txt
 ```
 
 # Or sync using existing pyproject.toml
+
 ```bash
 uv sync
 ```
 
 # Run the Agent
+
 ```bash
 uv run deep_research.py
 ```
