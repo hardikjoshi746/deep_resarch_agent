@@ -2,7 +2,6 @@ from agents import Runner, trace, gen_trace_id
 from search_agent import search_agent
 from planner_agent import planner_agent, WebSearchItem, WebSearchPlan
 from writer_agent import writer_agent, ReportData
-from email_agent import email_agent
 from evaluator_agent import evaluator_agent
 from eval_schema import EvaluationReport
 from build_eval_prompt import build_eval_prompt
@@ -37,10 +36,8 @@ class ResearchManager:
             yield "Report written, evaluating quality..."
 
             report, eval_report = await self.evaluate_and_maybe_revise(query, report, sources)
-            yield f"Evaluation done (overall: {eval_report.overall:.1f}). Sending email..."
+            yield f"Evaluation done (overall: {eval_report.overall:.1f}). Research complete."
 
-            await self.send_email(report)
-            yield "Email sent, research complete"
             yield report.markdown_report
 
     # ---------- Planning & Search ----------
@@ -144,7 +141,7 @@ class ResearchManager:
             return report, eval_report
 
         # Build concise feedback from evaluator recommendations
-        feedback_lines = "\n".join(f"- {r}" for r in (eval_report.recommendations or []))
+        feedback_lines = "\n".join(f"- {r}" for r in (getattr(eval_report, "recommendations", None) or []))
         if not feedback_lines:
             feedback_lines = "- Tighten unsupported claims and add/repair [n] citations for non-obvious facts."
 
@@ -201,7 +198,8 @@ class ResearchManager:
         return 0.0 if not sents else cited / len(sents)
 
     def _source_diversity(self, urls: list[str]) -> float:
-        if not urls: return 0.0
+        if not urls:
+            return 0.0
         domains = []
         for u in urls:
             try:
@@ -217,21 +215,15 @@ class ResearchManager:
         now = datetime.now(timezone.utc)
         ages = []
         for ts in iso_dates:
-            if not ts: continue
+            if not ts:
+                continue
             try:
                 dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
                 ages.append((now - dt).days)
             except Exception:
                 pass
-        if not ages: return math.inf
+        if not ages:
+            return math.inf
         ages.sort()
         m = len(ages) // 2
         return ages[m] if len(ages) % 2 else (ages[m - 1] + ages[m]) / 2
-
-    # ---------- Email ----------
-
-    async def send_email(self, report: ReportData) -> None:
-        print("Writing email...")
-        _ = await Runner.run(email_agent, report.markdown_report)
-        print("Email sent")
-        return report
