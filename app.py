@@ -1,22 +1,48 @@
 # app.py
 import os
+import asyncio
 import gradio as gr
 from research_manager import ResearchManager
 
+# Optional banner if key is missing
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BANNER = None if OPENAI_API_KEY else (
     "⚠️ <b>OPENAI_API_KEY</b> is not set. "
     "Add it in <i>Settings → Secrets</i> and restart the Space."
 )
 
-# async generator that yields incremental text
-async def stream(query: str):
-    try:
+def stream(query: str):
+    """
+    Synchronous generator wrapper around the async ResearchManager.
+    Gradio treats this as a streaming function and updates the Markdown output
+    as each chunk is yielded.
+    """
+    async def agen():
         rm = ResearchManager()
         async for chunk in rm.run(query):
             yield chunk
-    except Exception as e:
-        yield f"**Error:** {e}"
+
+    # Create a fresh event loop to drive the async generator
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        aiter = agen()
+        while True:
+            try:
+                chunk = loop.run_until_complete(aiter.__anext__())
+            except StopAsyncIteration:
+                break
+            except Exception as e:
+                yield f"**Error:** {e}"
+                break
+            else:
+                yield chunk
+    finally:
+        try:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        except Exception:
+            pass
+        loop.close()
 
 def build_ui():
     with gr.Blocks(title="Agentic Research") as demo:
@@ -35,9 +61,9 @@ def build_ui():
 
         out = gr.Markdown(label="Research stream")
 
-        # IMPORTANT in Gradio 5: pass stream=True so the async generator is consumed as a stream
-        run.click(stream, inputs=q, outputs=out, stream=True)
-        q.submit(stream, inputs=q, outputs=out, stream=True)
+        # No stream kwarg here; streaming is achieved by yielding from the sync generator above
+        run.click(stream, inputs=q, outputs=out)
+        q.submit(stream, inputs=q, outputs=out)
 
         gr.Examples(
             examples=[
@@ -52,7 +78,7 @@ def build_ui():
     return demo
 
 demo = build_ui()
-demo.queue()  # defaults are fine for Gradio 5
+demo.queue()  # enable queuing with defaults
 
 if __name__ == "__main__":
     demo.launch()
