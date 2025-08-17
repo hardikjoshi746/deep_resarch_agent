@@ -1,83 +1,122 @@
----
-title: Agentic Research
-emoji: 🚀
-colorFrom: indigo
-colorTo: purple
-sdk: gradio
-sdk_version: "5.33.1"
-app_file: app.py
-pinned: false
-license: mit
----
-
 # Deep Research Agent
 
-**A modular, AI-powered research assistant framework** built with Python and powered by [Gradio](https://www.gradio.app/) for the UI.  
-The system employs multiple agents — search, planner, writer, and email communicator — to autonomously break down research tasks, gather and analyze information, plan workflows, write drafts, and share results.
+## Overview
+
+This high-signal agentic research app plans web searches, aggregates findings, writes a source-grounded report, **evaluates** the result with a strict rubric, and (if needed) performs a **single-pass revision**.
+
+Built with **Python**, **Gradio**, and **OpenAI**, the app streams progress live and enforces citation hygiene using a numbered source list.
 
 ---
 
-## 📂 Repository Structure
+## Features
 
-```bash
-deep_resarch_agent/
-├── deep_research.py # Main entry point for the deep research agent
-├── email_agent.py # Sends email summaries or alerts
-├── planner_agent.py # Creates structured research plans
-├── research_manager.py # Oversees workflows and agent interactions
-├── search_agent.py # Retrieves data from the web or custom sources
-├── writer_agent.py # Drafts content or research summaries
-├── pyproject.toml # Project configuration & dependencies (managed by uv)
-├── requirements.txt # Dependencies list (pre-uv migration)
-├── uv.lock # Lockfile created by uv
-└── .python-version # Python version specification
-```
+- **Planner → Search → Writer → Evaluator → (Revise once)**
+  - Planner creates targeted search tasks.
+  - Searches run concurrently for speed.
+  - Writer produces a Markdown report with inline `[n]` citations.
+  - Evaluator scores **Faithfulness, Relevance & Completeness, Structure & Citations** (weighted 0.5/0.3/0.2) + actionable fixes.
+  - If quality or coverage is low, Writer revises once from evaluator feedback.
+
+- **Streaming UI**
+  - Live status lines (planning, searching, writing, evaluating) + final Markdown output.
+
+- **Source-grounded**
+  - Writer and Evaluator are given a numbered list of allowed sources to enforce correct `[n]` citations.
+
+- **Safe defaults for Spaces**
+  - Tracing is disabled by default to avoid event-loop context issues.
+  - Email sending is removed (keeps requirements minimal and deployment simple).
 
 ---
 
-## 🚀 Quick Start
+## “Schema” (Evaluator & Report)
 
-### Prerequisites
+### `EvaluationReport`  
+Returned by the Evaluator agent.
 
-- **Python 3.10+** (as specified in `.python-version`)
-- [`uv`](https://docs.astral.sh/uv) installed for dependency management
+| Field            | Type   | Notes                                                                 |
+|------------------|--------|-----------------------------------------------------------------------|
+| criteria         | array  | EXACTLY 3 items with `{name, score (1–5), justification}`             |
+| overall          | number | `0.5*Faithfulness + 0.3*Relevance + 0.2*Structure` (1 decimal place)  |
+| recommendations  | array  | 2–5 short, actionable fixes (e.g., “Add [2] for JPM claim”)          |
 
-### Setup
+### `ReportData`  
+Returned by the Writer agent.
 
-# If starting fresh (no pyproject.toml)
+| Field             | Type   | Notes                              |
+|-------------------|--------|------------------------------------|
+| markdown_report   | string | Final Markdown report              |
+| short_summary     | string | (Optional) one-liner + metrics     |
+
+---
+
+## Business Logic
+
+- **Citation coverage**: fraction of sentences with `[n]` references.  
+- **Source diversity**: Herfindahl-based score over domain names.  
+- **Recency**: median source age in days.
+
+A **single revision** is triggered if any threshold fails:
+- `overall < 4.0`
+- `coverage < 0.60`
+- `diversity < 0.50`
+- `median_age > 180 days` (if dates exist)
+
+---
+
+## Tech Stack
+
+- **Python (3.10)** — Compatible with Hugging Face Gradio Spaces
+- **Gradio** — UI and streaming
+- **OpenAI** — Agents and LLMs
+- **Pydantic v2** — Strict output schemas
+
+---
+
+## Folder Structure
 
 ```bash
-uv init
+
+├── app.py # Gradio entrypoint (used by Spaces)
+├── research_manager.py # Orchestrates planner/search/writer/evaluator
+├── planner_agent.py # PlannerAgent schemas & config
+├── search_agent.py # SearchAgent (replace shim with real search)
+├── writer_agent.py # WriterAgent -> ReportData
+├── evaluator_agent.py # EvaluatorAgent -> EvaluationReport
+├── eval_schema.py # Pydantic models for evaluator output
+├── build_eval_prompt.py # Helper to assemble evaluator input
+├── requirements.txt
+└── README.md
 ```
 
-# Install dependencies from requirements.txt
 
-```bash
-uv add --requirements requirements.txt
-```
+---
 
-# Or sync using existing pyproject.toml
+## Running the App (Locally & Spaces)
 
 ```bash
 uv sync
+export OPENAI_API_KEY=sk-...
+export DISABLE_TRACE=0     # optional: enable tracing locally
+uv run app.py
+
 ```
 
-# Run the Agent
+
+---
+
+## Running the App (Locally & Spaces)
+
+### 1) Local (uv)
 
 ```bash
-uv run deep_research.py
+uv sync
+export OPENAI_API_KEY=sk-...
+export DISABLE_TRACE=0     # optional: enable tracing locally
+uv run app.py
 ```
+---
 
-🧩 Modules Overview
+Author
+Hardik Joshi
 
-deep_research.py – Main orchestrator script
-
-email_agent.py – Sends research summaries or notifications via email
-
-planner_agent.py – Generates step-by-step research plans
-
-research_manager.py – Coordinates agent collaboration
-
-search_agent.py – Handles information retrieval
-
-writer_agent.py – Creates written summaries and reports
