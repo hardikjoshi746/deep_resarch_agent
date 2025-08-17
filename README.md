@@ -105,17 +105,6 @@ uv run app.py
 
 ---
 
-## Running the App (Locally & Spaces)
-
-### 1) Local (uv)
-
-```bash
-uv sync
-export OPENAI_API_KEY=sk-...
-export DISABLE_TRACE=0     # optional: enable tracing locally
-uv run app.py
-```
----
 
 Author
 Hardik Joshi
